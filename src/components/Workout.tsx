@@ -82,7 +82,7 @@ const Wrapper = styled.div<{ bgColor: string }>`
   color: white;
 `;
 const Content = styled.div`
-  margin-top: -100px;
+  margin-top: -150px;
   padding: 20px;
 `;
 const Row = styled.p`
@@ -104,7 +104,7 @@ const Completed = styled.p`
 `;
 const Done = styled.button`
   position: absolute;
-  bottom: 40px;
+  bottom: 60px;
   font-size: 30px;
   color: inherit;
   background-color: inherit;

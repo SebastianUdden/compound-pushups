@@ -18,4 +18,7 @@ export const peppTalk = [
     "Keep up the good work!",
     "See you tomorrow!",
     "First task of the day, CHECK!",
+    "Keep it coming!",
+    "So far so good!",
+    "Such greatness, much wow!"
 ]
