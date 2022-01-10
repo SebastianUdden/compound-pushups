@@ -36,7 +36,7 @@ const getDateOffset = (value: number) => {
 };
 
 const getCurrentStreak = (values: Array<TimeValue>) => {
-  let c = 1;
+  let c = 0;
   values.forEach((v, i) => {
     const dateOffset = getDateOffset(i);
     if (dateOffset === v.date) {
@@ -51,7 +51,9 @@ const Workout = () => {
   const [greeting, setGreeting] = useState<any>(false);
   const [complete, setComplete] = useState(false);
   const [count, setCount] = useState(0);
-  const [type, setType] = useState("");
+  const [type, setType] = useState(TYPES[0]);
+  // const [showAddWorkout, setShowAddWorkout] = useState(false);
+  const [types] = useState(TYPES);
   const [currentStreak, setCurrentStreak] = useState(0);
   const text = "Today you're challenge is";
 
@@ -75,20 +77,23 @@ const Workout = () => {
     if (!complete) return;
     const oldWorkout = JSON.parse(localStorage.getItem("workout") || "{}");
     const newCount = count;
-    const oldType = oldWorkout[type];
     const now = new Date();
     const todaysDate = `${now.getFullYear()}-${month(now.getMonth())}-${date(
       now.getDate()
     )}`;
     const newType = { count: newCount, date: todaysDate };
-    if (!type) return;
+    const typeValues = oldWorkout[type] || [];
+    if (typeValues.length && typeValues[0].date === getDateOffset(0)) return;
+    const newTypeValues = [newType, ...typeValues];
     const workout: WorkoutProps = {
       ...oldWorkout,
       selectedType: type,
-      [type]: oldType ? [newType, ...oldType] : [newType],
+      [type]: newTypeValues,
       dayCompleted: new Date(),
     };
     localStorage.setItem("workout", JSON.stringify(workout));
+    setCurrentStreak(getCurrentStreak(newTypeValues));
+
     // eslint-disable-next-line
   }, [complete]);
 
@@ -96,29 +101,36 @@ const Workout = () => {
     const oldWorkout = JSON.parse(localStorage.getItem("workout") || "{}");
     const oldType = oldWorkout[type] || [];
     const lastValue = oldType[0];
-    console.log({ lastValue });
     setComplete(lastValue ? lastValue.date === getDateOffset(0) : false);
+    const typeValues = oldWorkout[type] || [];
+    setCurrentStreak(getCurrentStreak(typeValues));
   }, [type]);
 
-  const typeIndex = TYPES.findIndex((t) => t === type);
-  const leftIndex = typeIndex === 0 ? TYPES.length - 1 : typeIndex - 1;
-  const rightIndex = typeIndex + 1 === TYPES.length ? 0 : typeIndex + 1;
+  const typeIndex = types.findIndex((t) => t === type);
+  const leftIndex = typeIndex === 0 ? types.length - 1 : typeIndex - 1;
+  const rightIndex = typeIndex + 1 === types.length ? 0 : typeIndex + 1;
 
   return (
     <Wrapper bgColor={bgColor}>
       <TopRow>
-        <Text>
-          <Arrow onClick={() => setType(TYPES[leftIndex])}>&larr;</Arrow>
+        <Emphasized>
+          <Arrow onClick={() => setType(types[leftIndex])}>&larr;</Arrow>
           {type}
           {count > 2 && "s"}
-          <Arrow onClick={() => setType(TYPES[rightIndex])}>&rarr;</Arrow>
-        </Text>
+          <Arrow onClick={() => setType(types[rightIndex])}>&rarr;</Arrow>
+        </Emphasized>
+        <Row>
+          <Text>
+            Daily streak: <strong>{currentStreak}</strong>
+          </Text>
+        </Row>
       </TopRow>
+      {/* <Add onClick={() => setShowAddWorkout(true)}>ADD +</Add> */}
       {!complete ? (
         <>
           <Content>
             <Row>
-              <Greeting>{greeting}</Greeting>
+              <Emphasized>{greeting}</Emphasized>
             </Row>
             <Row>
               <Text>{text}</Text>
@@ -141,11 +153,6 @@ const Workout = () => {
             <Text>You are done for the day...</Text>
           </Row>
           <Completed>{getRandom(peppTalk)}</Completed>
-          <Row>
-            <Text>
-              Current streak: <strong>{currentStreak}</strong>
-            </Text>
-          </Row>
         </Content>
       )}
     </Wrapper>
@@ -177,7 +184,7 @@ const TopRow = styled(Row)`
 const Count = styled.span`
   font-size: 180px;
 `;
-const Greeting = styled.span`
+const Emphasized = styled.span`
   font-size: 18px;
 `;
 const Text = styled.span`
@@ -194,11 +201,23 @@ const Done = styled.button`
   color: inherit;
   background-color: inherit;
   padding: 20px 40px;
+  cursor: pointer;
+  :hover {
+    color: orange;
+  }
 `;
 const Arrow = styled.button`
   background-color: inherit;
   color: inherit;
   border: none;
+  cursor: pointer;
 `;
+// const Add = styled.button`
+//   position: absolute;
+//   right: 5px;
+//   top: 5px;
+//   color: white;
+//   border: 2px solid red;
+// `;
 
 export default Workout;
