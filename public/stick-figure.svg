@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" transform="rotate(90, 50, 50)">
+    <g stroke-linecap="round">
+
+        <!-- Right Lower Arm -->
+        <line x1="68.5" y1="64.7" x2="70.6" y2="73.8" stroke="#666" stroke-width="2" transform="rotate(3, 70, 45)" />
+        <!-- Right Arm -->
+        <line x1="67.5" y1="54.7" x2="68.6" y2="64.8" stroke="#666" stroke-width="2.5" transform="rotate(3, 70, 45)" />
+        <!-- Right Leg -->
+        <line x1="51" y1="61" x2="23.3" y2="72" stroke="#000" stroke-width="2" transform="rotate(-3, 50, 70)" />
+
+        <!-- Body -->
+        <line x1="48" y1="62" x2="80" y2="50" stroke="#333" stroke-width="2" />
+
+        <!-- Head -->
+        <circle cx="80" cy="50" r="7" fill="#000" />
+
+        <!-- Left Lower Arm -->
+        <line x1="67" y1="66.4" x2="69" y2="76.8" stroke="#000" stroke-width="2" transform="rotate(-3, 30, 45)" />
+        <!-- Left Arm -->
+        <line x1="67" y1="56.4" x2="67" y2="66.4" stroke="#000" stroke-width="2.5" transform="rotate(-3, 30, 45)" />
+        <!-- Left Leg -->
+        <line x1="50" y1="61.3" x2="22.7" y2="75" stroke="#000" stroke-width="2" transform="rotate(3, 50, 70)" />
+    </g>
+</svg>

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import styled from "styled-components";
 import { greetings, peppTalk } from "../constants/greetings";
 
@@ -10,7 +10,9 @@ interface WorkoutProps {
   "push-ups"?: Array<TimeValue>;
 }
 
+const COMPOUND_WORKOUT_DATA = "compound-workout-0001";
 const ONE_PERCENT_INCREASE = 1.01;
+const ONE_PERCENT_DECREASE = 0.99;
 const TYPES = ["push-up", "squat", "sit-up"];
 
 const getRandom = (array: string[]) =>
@@ -48,42 +50,69 @@ const getCurrentStreak = (values: Array<TimeValue>) => {
 
 const Workout = () => {
   const bgColor = "#282c34";
+  const isLoading = useRef(true);
+  const [showAddWorkout, setShowAddWorkout] = useState(false);
+  const [add, setAdd] = useState("");
+  const [remove, setRemove] = useState("");
   const [greeting, setGreeting] = useState<any>(false);
   const [complete, setComplete] = useState(false);
+  const [continueNow, setContinueNow] = useState(false);
   const [count, setCount] = useState(0);
   const [type, setType] = useState(TYPES[0]);
-  // const [showAddWorkout, setShowAddWorkout] = useState(false);
   const [types] = useState(TYPES);
   const [currentStreak, setCurrentStreak] = useState(0);
-  const text = "Today you're challenge is";
+  const text = "Today your challenge is";
 
-  useEffect(() => {
-    const workout = JSON.parse(localStorage.getItem("workout") || "{}");
-    if (!workout) return;
-    const typeValues = workout[workout?.selectedType] || [];
-    setCurrentStreak(getCurrentStreak(typeValues));
+  const onWorkoutDataChange = (property: string, value: any) => {
+    const workout = JSON.parse(
+      localStorage.getItem(COMPOUND_WORKOUT_DATA) || "{}"
+    );
+    const newWorkoutData = { ...workout, [property]: value };
+    localStorage.setItem(COMPOUND_WORKOUT_DATA, JSON.stringify(newWorkoutData));
+  };
 
-    if (new Date(workout.dayCompleted).getDate() === new Date().getDate()) {
-      setComplete(true);
-      return;
-    }
-    const lastValue = typeValues[0];
-    setCount((lastValue?.count || 1) * ONE_PERCENT_INCREASE);
-    setType(workout?.selectedType || "push-up");
-    setGreeting(getRandom(greetings));
-  }, []);
+  const handleSelectType = (type: string) => {
+    setType(type);
+    onWorkoutDataChange("selectedType", type);
+  };
 
-  useEffect(() => {
+  const handleAdd = () => {
+    const oldWorkout = JSON.parse(
+      localStorage.getItem(COMPOUND_WORKOUT_DATA) || "{}"
+    );
+  };
+  const handleRemove = () => {
+    const oldWorkout = JSON.parse(
+      localStorage.getItem(COMPOUND_WORKOUT_DATA) || "{}"
+    );
+  };
+
+  const handleDone = () => {
+    console.log("1");
     if (!complete) return;
-    const oldWorkout = JSON.parse(localStorage.getItem("workout") || "{}");
-    const newCount = count;
+    console.log("2");
+    setComplete(true);
+
+    const oldWorkout = JSON.parse(
+      localStorage.getItem(COMPOUND_WORKOUT_DATA) || "{}"
+    );
+    const percentageCount = count * ONE_PERCENT_INCREASE;
+    const newCount =
+      percentageCount > Math.round(count) + 1 ? percentageCount : count + 1;
     const now = new Date();
     const todaysDate = `${now.getFullYear()}-${month(now.getMonth())}-${date(
       now.getDate()
     )}`;
     const newType = { count: newCount, date: todaysDate };
     const typeValues = oldWorkout[type] || [];
-    if (typeValues.length && typeValues[0].date === getDateOffset(0)) return;
+    if (
+      !continueNow &&
+      typeValues.length &&
+      typeValues[0].date === getDateOffset(0)
+    )
+      return;
+    setCount(newCount);
+    setContinueNow(false);
     const newTypeValues = [newType, ...typeValues];
     const workout: WorkoutProps = {
       ...oldWorkout,
@@ -91,14 +120,74 @@ const Workout = () => {
       [type]: newTypeValues,
       dayCompleted: new Date(),
     };
-    localStorage.setItem("workout", JSON.stringify(workout));
+    localStorage.setItem(COMPOUND_WORKOUT_DATA, JSON.stringify(workout));
     setCurrentStreak(getCurrentStreak(newTypeValues));
+  };
 
-    // eslint-disable-next-line
-  }, [complete]);
+  const handleFail = () => {
+    if (!complete) return;
+    setComplete(true);
+
+    const oldWorkout = JSON.parse(
+      localStorage.getItem(COMPOUND_WORKOUT_DATA) || "{}"
+    );
+    const percentageCount = count * ONE_PERCENT_DECREASE;
+    const newCount =
+      percentageCount < Math.round(count) - 1 ? percentageCount : count - 1;
+    const now = new Date();
+    const todaysDate = `${now.getFullYear()}-${month(now.getMonth())}-${date(
+      now.getDate()
+    )}`;
+    const newType = { count: newCount, date: todaysDate };
+    const typeValues = oldWorkout[type] || [];
+    if (
+      !continueNow &&
+      typeValues.length &&
+      typeValues[0].date === getDateOffset(0)
+    )
+      return;
+    setCount(newCount);
+    setContinueNow(false);
+    const newTypeValues = [newType, ...typeValues];
+    const workout: WorkoutProps = {
+      ...oldWorkout,
+      selectedType: type,
+      [type]: newTypeValues,
+      dayCompleted: new Date(),
+    };
+    localStorage.setItem(COMPOUND_WORKOUT_DATA, JSON.stringify(workout));
+    setCurrentStreak(0);
+  };
 
   useEffect(() => {
-    const oldWorkout = JSON.parse(localStorage.getItem("workout") || "{}");
+    const workout = JSON.parse(
+      localStorage.getItem(COMPOUND_WORKOUT_DATA) || "{}"
+    );
+    if (!workout) return;
+    const typeValues = workout[workout?.selectedType] || [];
+    setCurrentStreak(getCurrentStreak(typeValues));
+
+    const lastValue = typeValues[0];
+    const lastCount = lastValue?.count || 1;
+    const percentageCount = lastCount * ONE_PERCENT_INCREASE;
+    const newCount =
+      percentageCount > Math.round(lastCount) + 1 ? percentageCount : lastCount;
+
+    setCount(newCount);
+    setType(workout?.selectedType || "push-up");
+    if (new Date(workout.dayCompleted).getDate() === new Date().getDate()) {
+      setComplete(true);
+      isLoading.current = false;
+      return;
+    }
+    setGreeting(getRandom(greetings));
+    isLoading.current = false;
+  }, []);
+
+  useEffect(() => {
+    const oldWorkout = JSON.parse(
+      localStorage.getItem(COMPOUND_WORKOUT_DATA) || "{}"
+    );
     const oldType = oldWorkout[type] || [];
     const lastValue = oldType[0];
     setComplete(lastValue ? lastValue.date === getDateOffset(0) : false);
@@ -110,14 +199,45 @@ const Workout = () => {
   const leftIndex = typeIndex === 0 ? types.length - 1 : typeIndex - 1;
   const rightIndex = typeIndex + 1 === types.length ? 0 : typeIndex + 1;
 
+  if (isLoading.current) return <></>;
   return (
     <Wrapper bgColor={bgColor}>
+      {showAddWorkout && (
+        <AddWorkout>
+          <div>
+            <Emphasized>Add</Emphasized>
+            <Text>Write the name of the workout you wish to add.</Text>
+            <Row>
+              <Input
+                value={add}
+                onChange={(e) => setAdd(e.target.value)}
+                placeholder="E.g push-ups"
+              />
+              <Button onClick={handleAdd}>Add</Button>
+            </Row>
+            <Emphasized>Delete</Emphasized>
+            <Text>Write the name of the workout you wish to delete.</Text>
+            <Row>
+              <Input
+                value={remove}
+                onChange={(e) => setRemove(e.target.value)}
+                placeholder="E.g squats"
+              />
+              <Button onClick={handleRemove}>Remove</Button>
+            </Row>
+          </div>
+        </AddWorkout>
+      )}
       <TopRow>
         <Emphasized>
-          <Arrow onClick={() => setType(types[leftIndex])}>&larr;</Arrow>
+          <Arrow onClick={() => handleSelectType(types[leftIndex])}>
+            &larr;
+          </Arrow>
           {type}
           {count > 2 && "s"}
-          <Arrow onClick={() => setType(types[rightIndex])}>&rarr;</Arrow>
+          <Arrow onClick={() => handleSelectType(types[rightIndex])}>
+            &rarr;
+          </Arrow>
         </Emphasized>
         <Row>
           <Text>
@@ -125,8 +245,8 @@ const Workout = () => {
           </Text>
         </Row>
       </TopRow>
-      {/* <Add onClick={() => setShowAddWorkout(true)}>ADD +</Add> */}
-      {!complete ? (
+      <Add onClick={() => setShowAddWorkout(true)}>ADD +</Add>
+      {!complete || continueNow ? (
         <>
           <Content>
             <Row>
@@ -136,7 +256,7 @@ const Workout = () => {
               <Text>{text}</Text>
             </Row>
             <Row>
-              <Count>{Math.floor(count)}</Count>
+              <Count>{Math.round(count)}</Count>
             </Row>
             <Row>
               <Text>
@@ -145,14 +265,23 @@ const Workout = () => {
               </Text>
             </Row>
           </Content>
-          <Done onClick={() => setComplete(true)}>Done</Done>
+          <Done onClick={handleDone}>Success</Done>
+          <Button onClick={handleFail}>Fail</Button>
         </>
       ) : (
         <Content>
           <Row>
-            <Text>You are done for the day...</Text>
+            <Text>
+              You are done for the day... Tomorrows challenge,{" "}
+              {Math.round(count)} reps!
+            </Text>
           </Row>
           <Completed>{getRandom(peppTalk)}</Completed>
+          <br />
+          <Row>
+            <Text>Feeling strong?</Text>
+          </Row>
+          <Button onClick={() => setContinueNow(true)}>Continue now!</Button>
         </Content>
       )}
     </Wrapper>
@@ -212,12 +341,50 @@ const Arrow = styled.button`
   border: none;
   cursor: pointer;
 `;
-// const Add = styled.button`
-//   position: absolute;
-//   right: 5px;
-//   top: 5px;
-//   color: white;
-//   border: 2px solid red;
-// `;
+const Button = styled.button`
+  background-color: #000;
+  color: white;
+  border: none;
+  padding: 10px;
+  margin: 5px;
+  border-radius: 6px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+  cursor: pointer;
+  :hover {
+    color: orange;
+    text-decoration: underline;
+  }
+`;
+const Add = styled(Button)`
+  position: absolute;
+  right: 5px;
+  top: 5px;
+`;
+const AddWorkout = styled.div`
+  background-color: #000;
+  color: #fff;
+  position: sticky;
+  height: 100vh;
+  width: 100%;
+  opacity: 1;
+  z-index: 2;
+  div {
+    margin: 20px;
+    display: flex;
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  span {
+    margin-bottom: 10px;
+  }
+  button {
+    background-color: #222;
+    margin-bottom: 30px;
+  }
+`;
+const Input = styled.input`
+  padding: 10px;
+  border-radius: 6px;
+`;
 
 export default Workout;
