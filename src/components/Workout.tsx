@@ -49,6 +49,9 @@ const getCurrentStreak = (values: Array<TimeValue>) => {
 };
 
 const Workout = () => {
+  const workoutData = JSON.parse(
+    localStorage.getItem(COMPOUND_WORKOUT_DATA) || "{}"
+  );
   const bgColor = "#282c34";
   const isLoading = useRef(true);
   const [showAddWorkout, setShowAddWorkout] = useState(false);
@@ -58,15 +61,15 @@ const Workout = () => {
   const [complete, setComplete] = useState(false);
   const [continueNow, setContinueNow] = useState(false);
   const [count, setCount] = useState(0);
-  const [type, setType] = useState(TYPES[0]);
-  const [types] = useState(TYPES);
+  const [type, setType] = useState((workoutData?.types || TYPES)[0]);
+  const [types, setTypes] = useState(
+    workoutData?.types ? Object.keys(workoutData?.types) : TYPES
+  );
   const [currentStreak, setCurrentStreak] = useState(0);
   const text = "Today your challenge is";
 
   const onWorkoutDataChange = (property: string, value: any) => {
-    const workout = JSON.parse(
-      localStorage.getItem(COMPOUND_WORKOUT_DATA) || "{}"
-    );
+    const workout = workoutData;
     const newWorkoutData = { ...workout, [property]: value };
     localStorage.setItem(COMPOUND_WORKOUT_DATA, JSON.stringify(newWorkoutData));
   };
@@ -77,22 +80,38 @@ const Workout = () => {
   };
 
   const handleAdd = () => {
-    const oldWorkout = JSON.parse(
-      localStorage.getItem(COMPOUND_WORKOUT_DATA) || "{}"
+    const oldWorkout = workoutData;
+    localStorage.setItem(
+      COMPOUND_WORKOUT_DATA,
+      JSON.stringify({
+        ...oldWorkout,
+        types: { ...oldWorkout.types, [add]: [] },
+      })
     );
+    setTypes([...types, add]);
+    setShowAddWorkout(false);
   };
   const handleRemove = () => {
     const oldWorkout = JSON.parse(
       localStorage.getItem(COMPOUND_WORKOUT_DATA) || "{}"
     );
+    const { [remove]: value, ...someTypes } = oldWorkout.types;
+    localStorage.setItem(
+      COMPOUND_WORKOUT_DATA,
+      JSON.stringify({
+        ...oldWorkout,
+        types: someTypes,
+      })
+    );
+    const newTypes = [...types.filter((t) => t !== remove)];
+    setTypes(newTypes);
+    setType(newTypes[0]);
+    setShowAddWorkout(false);
   };
 
   const handleDone = () => {
-    console.log("1");
-    if (!complete) return;
-    console.log("2");
+    if (complete && !continueNow) return;
     setComplete(true);
-
     const oldWorkout = JSON.parse(
       localStorage.getItem(COMPOUND_WORKOUT_DATA) || "{}"
     );
@@ -104,7 +123,7 @@ const Workout = () => {
       now.getDate()
     )}`;
     const newType = { count: newCount, date: todaysDate };
-    const typeValues = oldWorkout[type] || [];
+    const typeValues = oldWorkout.types[type] || [];
     if (
       !continueNow &&
       typeValues.length &&
@@ -117,8 +136,8 @@ const Workout = () => {
     const workout: WorkoutProps = {
       ...oldWorkout,
       selectedType: type,
-      [type]: newTypeValues,
       dayCompleted: new Date(),
+      types: { ...oldWorkout.types, [type]: newTypeValues },
     };
     localStorage.setItem(COMPOUND_WORKOUT_DATA, JSON.stringify(workout));
     setCurrentStreak(getCurrentStreak(newTypeValues));
@@ -127,7 +146,6 @@ const Workout = () => {
   const handleFail = () => {
     if (!complete) return;
     setComplete(true);
-
     const oldWorkout = JSON.parse(
       localStorage.getItem(COMPOUND_WORKOUT_DATA) || "{}"
     );
@@ -139,7 +157,7 @@ const Workout = () => {
       now.getDate()
     )}`;
     const newType = { count: newCount, date: todaysDate };
-    const typeValues = oldWorkout[type] || [];
+    const typeValues = oldWorkout.types[type] || [];
     if (
       !continueNow &&
       typeValues.length &&
@@ -152,8 +170,8 @@ const Workout = () => {
     const workout: WorkoutProps = {
       ...oldWorkout,
       selectedType: type,
-      [type]: newTypeValues,
       dayCompleted: new Date(),
+      types: { ...oldWorkout.types, [type]: newTypeValues },
     };
     localStorage.setItem(COMPOUND_WORKOUT_DATA, JSON.stringify(workout));
     setCurrentStreak(0);
@@ -163,8 +181,16 @@ const Workout = () => {
     const workout = JSON.parse(
       localStorage.getItem(COMPOUND_WORKOUT_DATA) || "{}"
     );
-    if (!workout) return;
-    const typeValues = workout[workout?.selectedType] || [];
+    if (!workout.selectedType) {
+      let newWorkout: any = { types: {} };
+      types.forEach((t: any) => (newWorkout.types[t] = []));
+      newWorkout.selectedType = "push-up";
+      localStorage.setItem(COMPOUND_WORKOUT_DATA, JSON.stringify(newWorkout));
+    }
+    setType(workout?.selectedType || "push-up");
+    const typeValues =
+      (workout?.types && workout.types[workout?.selectedType]) || [];
+    console.log({ typeValues });
     setCurrentStreak(getCurrentStreak(typeValues));
 
     const lastValue = typeValues[0];
@@ -172,9 +198,7 @@ const Workout = () => {
     const percentageCount = lastCount * ONE_PERCENT_INCREASE;
     const newCount =
       percentageCount > Math.round(lastCount) + 1 ? percentageCount : lastCount;
-
     setCount(newCount);
-    setType(workout?.selectedType || "push-up");
     if (new Date(workout.dayCompleted).getDate() === new Date().getDate()) {
       setComplete(true);
       isLoading.current = false;
@@ -185,17 +209,19 @@ const Workout = () => {
   }, []);
 
   useEffect(() => {
+    if (!type) return;
     const oldWorkout = JSON.parse(
       localStorage.getItem(COMPOUND_WORKOUT_DATA) || "{}"
     );
     const oldType = oldWorkout[type] || [];
     const lastValue = oldType[0];
     setComplete(lastValue ? lastValue.date === getDateOffset(0) : false);
-    const typeValues = oldWorkout[type] || [];
+    const typeValues = oldWorkout.types[type] || [];
+    setCount(typeValues[0]?.count || 1);
     setCurrentStreak(getCurrentStreak(typeValues));
   }, [type]);
 
-  const typeIndex = types.findIndex((t) => t === type);
+  const typeIndex = types.findIndex((t: any) => t === type);
   const leftIndex = typeIndex === 0 ? types.length - 1 : typeIndex - 1;
   const rightIndex = typeIndex + 1 === types.length ? 0 : typeIndex + 1;
 
@@ -224,6 +250,9 @@ const Workout = () => {
                 placeholder="E.g squats"
               />
               <Button onClick={handleRemove}>Remove</Button>
+            </Row>
+            <Row>
+              <Button onClick={() => setShowAddWorkout(false)}>Cancel</Button>
             </Row>
           </div>
         </AddWorkout>
@@ -317,7 +346,7 @@ const Emphasized = styled.span`
   font-size: 18px;
 `;
 const Text = styled.span`
-  opacity: 0.2;
+  opacity: 0.5;
 `;
 const Completed = styled.p`
   font-size: 30px;
