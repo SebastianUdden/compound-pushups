@@ -190,7 +190,6 @@ const Workout = () => {
     setType(workout?.selectedType || "push-up");
     const typeValues =
       (workout?.types && workout.types[workout?.selectedType]) || [];
-    console.log({ typeValues });
     setCurrentStreak(getCurrentStreak(typeValues));
 
     const lastValue = typeValues[0];
