@@ -205,6 +205,7 @@ const Workout = () => {
     }
     setGreeting(getRandom(greetings));
     isLoading.current = false;
+    // eslint-disable-next-line
   }, []);
 
   useEffect(() => {
